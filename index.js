@@ -4,13 +4,14 @@ const port = 4000;
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const config = require("./config/key");
-const auth = require("./middleware/auth");
+const { auth } = require("./middleware/auth");
 const { User } = require("./models/User");
 
 // application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: true }));
 // application/json
 app.use(bodyParser.json());
+app.use(cookieParser());
 
 const mongoose = require("mongoose");
 mongoose
@@ -60,7 +61,7 @@ app.post("/api/users/login", (req, res) => {
 
                 // 토큰을 쿠키, 로컬스토리지에 저장한다.
                 res
-                    .cookie("x_auth", user.token)
+                    .cookies("x_auth", user.token)
                     .status(200)
                     .json({ loginSuccess: true, userId: user._id });
             });
@@ -80,6 +81,13 @@ app.get("api/users/auth", auth, (req, res) => {
         lastname: req.user.lastname,
         role: req.user.role,
         image: req.user.image,
+    });
+});
+
+app.get("/api/users/logout", auth, (req, res) => {
+    User.findOneAndUpdate({ _id: req.user._id }, { token: "" }, (err, user) => {
+        if (err) return res.json({ success: false, err });
+        return res.status(200).send({ success: true });
     });
 });
 
